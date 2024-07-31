@@ -1,3 +1,6 @@
+import os
+os.system('sh setup.sh')
+
 import streamlit as st
 from streamlit_drawable_canvas import st_canvas
 from tensorflow.keras.models import load_model
