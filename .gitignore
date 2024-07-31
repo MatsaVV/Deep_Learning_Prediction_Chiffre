@@ -23,12 +23,18 @@ venv.bak/
 # Logs
 *.log
 
+<<<<<<< Updated upstream
 # Données sensibles et volumineuses
 data/dataset.csv
+=======
+# Données
+data/*.npy
+>>>>>>> Stashed changes
 
 # Modèles sauvegardés
 models/model.h5
 
+<<<<<<< Updated upstream
 # Fichiers temporaires
 *.tmp
 *.temp
@@ -38,3 +44,9 @@ models/model.h5
 # Systèmes d'exploitation
 .DS_Store
 Thumbs.db
+=======
+# Autres fichiers à ignorer
+__pycache__/
+*.py
+*.so
+>>>>>>> Stashed changes
