@@ -1,8 +1,9 @@
 import streamlit as st
 from streamlit_drawable_canvas import st_canvas
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model, Model
 import numpy as np
 from PIL import Image
+import matplotlib.pyplot as plt
 
 # Chargement du modèle et des nouvelles données de test
 model = load_model('model/model.h5')
@@ -24,62 +25,89 @@ menu = st.sidebar.selectbox(
     ['Image aléatoire', 'Dessin', 'Jeux']
 )
 
-# Fonction pour charger une image aléatoire et prédire
-def load_random_image_and_predict():
+# Fonction pour prédire une image
+def predict_image(image):
+    image = image.reshape(1, 28, 28, 1)
+    pred = model.predict(image)
+    predicted_label = np.argmax(pred)
+    st.session_state.predicted_label = predicted_label
+    return predicted_label
+
+# Fonction pour afficher le tableau des prédictions
+def display_prediction_table():
+    st.subheader('Tableau des prédictions')
+    st.write(f"Prédictions correctes: {st.session_state.correct_predictions}")
+    st.write(f"Prédictions incorrectes: {st.session_state.incorrect_predictions}")
+
+# Fonction pour valider la prédiction
+def validate_prediction(true_label):
+    correct = st.button('Correct')
+    incorrect = st.button('Incorrect')
+    if correct or incorrect:
+        if correct:
+            st.success('Merci pour votre confirmation!')
+            st.session_state.correct_predictions += 1
+        elif incorrect:
+            st.error(f'Oups!')
+            st.session_state.incorrect_predictions += 1
+        del st.session_state.predicted_label
+
+# Fonction pour afficher les activations des couches
+def plot_layer_activations(model, img):
+    layer_outputs = [layer.output for layer in model.layers if 'conv2d' in layer.name or 'max_pooling2d' in layer.name]
+    activation_model = Model(inputs=model.input, outputs=layer_outputs)
+    activations = activation_model.predict(img)
+
+    for layer_name, layer_activation in zip([layer.name for layer in model.layers if 'conv2d' in layer.name or 'max_pooling2d' in layer.name], activations):
+        n_features = layer_activation.shape[-1]  # nombre de caractéristiques dans l'activation
+        size = layer_activation.shape[1]  # taille de chaque caractéristique (supposons que c'est carré)
+
+        n_cols = n_features // 16  # limites pour 16 caractéristiques par ligne
+        display_grid = np.zeros((size * n_cols, size * 16))
+
+        for col in range(n_cols):
+            for row in range(16):
+                channel_image = layer_activation[0, :, :, col * 16 + row]
+                channel_image -= channel_image.mean()  # post-traitement pour une meilleure visualisation
+                channel_image /= channel_image.std()
+                channel_image *= 64
+                channel_image += 128
+                channel_image = np.clip(channel_image, 0, 255).astype('uint8')
+                display_grid[col * size : (col + 1) * size, row * size : (row + 1) * size] = channel_image
+
+        scale = 1. / size
+        fig, ax = plt.subplots(figsize=(scale * display_grid.shape[1], scale * display_grid.shape[0]))
+        ax.set_title(layer_name)
+        ax.grid(False)
+        ax.imshow(display_grid, aspect='auto', cmap='viridis')
+        st.pyplot(fig)
+
+# Affichage du contenu en fonction de la sélection du menu
+if menu == 'Image aléatoire':
+    st.header('Image aléatoire')
     if 'index' not in st.session_state or st.session_state.update_image:
         st.session_state.index = np.random.randint(0, X_test_new.shape[0])
         st.session_state.update_image = False
 
     index = st.session_state.index
     image = X_test_new[index].reshape(28, 28)
-
     st.image(image, caption='Image aléatoire du dataset', width=150)
+
     if st.button('Prédire'):
         st.session_state.predicted = True
-        image = image.reshape(1, 28, 28, 1)  # Reshape pour le modèle
-        pred = model.predict(image)
-        predicted_label = np.argmax(pred)
-        st.session_state.predicted_label = predicted_label
+        predicted_label = predict_image(image)
         st.write(f'Prédiction : {predicted_label}')
     elif 'predicted' in st.session_state and st.session_state.predicted:
         st.write(f'Prédiction précédente : {st.session_state.predicted_label}')
 
-    return None, st.session_state.get('predicted_label', None)
+    if 'predicted_label' in st.session_state:
+        validate_prediction(true_label=None)  # true_label devrait être défini ici
 
-# Initialiser les valeurs de session pour l'image aléatoire
-if 'update_image' not in st.session_state:
-    st.session_state.update_image = True
-if 'predicted' not in st.session_state:
-    st.session_state.predicted = False
-
-# Affichage du contenu en fonction de la sélection du menu
-if menu == 'Image aléatoire':
-    st.header('Image aléatoire')
-    true_label, predicted_label = load_random_image_and_predict()
-
-    # Boutons pour validation de la prédiction
-    if predicted_label is not None:
-        correct = st.button('Correct')
-        incorrect = st.button('Incorrect')
-        if correct or incorrect:
-            if correct:
-                st.success('Merci pour votre confirmation!')
-                st.session_state.correct_predictions += 1
-            elif incorrect:
-                st.error(f'Oups! Le bon chiffre était {true_label}.')
-                st.session_state.incorrect_predictions += 1
-            st.session_state.update_image = True  # Marque pour charger une nouvelle image
-            st.session_state.predicted = False  # Réinitialise l'état de prédiction
-
-    # Bouton pour charger une nouvelle image
     if st.button('Nouvelle image'):
         st.session_state.update_image = True
         st.session_state.predicted = False
 
-    # Affichage du tableau des prédictions
-    st.subheader('Tableau des prédictions')
-    st.write(f"Prédictions correctes: {st.session_state.correct_predictions}")
-    st.write(f"Prédictions incorrectes: {st.session_state.incorrect_predictions}")
+    display_prediction_table()
 
 elif menu == 'Dessin':
     st.header('Dessinez un chiffre')
@@ -95,41 +123,53 @@ elif menu == 'Dessin':
         key="canvas"
     )
 
-    # Bouton pour prédire le chiffre dessiné
     if st.button('Prédire le chiffre dessiné'):
         if canvas_result.image_data is not None:
-            # Traitement de l'image pour la prédiction
             img = canvas_result.image_data
             img = Image.fromarray((img[:, :, 0]).astype('uint8'))  # Convertir en image PIL, utiliser un seul canal
             img = img.resize((28, 28), Image.ANTIALIAS)  # Redimensionner l'image comme les données d'entraînement
             img = np.array(img) / 255.0  # Normalisation
             img = img.reshape(1, 28, 28, 1)  # Reshape pour le modèle
-
-            # Prédiction
-            pred = model.predict(img)
-            predicted_label = np.argmax(pred)
+            predicted_label = predict_image(img)
             st.write(f'Prédiction du chiffre dessiné : {predicted_label}')
-            st.session_state.predicted_label = predicted_label  # Stocker la prédiction dans la session
 
-    # Boutons pour validation de la prédiction pour la page "Dessin"
     if 'predicted_label' in st.session_state:
         true_label = st.number_input('Entrez le vrai chiffre dessiné :', min_value=0, max_value=9, step=1)
-        correct = st.button('Correct')
-        incorrect = st.button('Incorrect')
-        if correct or incorrect:
-            if correct:
-                st.success('Merci pour votre confirmation!')
-                st.session_state.correct_predictions += 1
-            elif incorrect:
-                st.error(f'Oups! Le bon chiffre était {true_label}.')
-                st.session_state.incorrect_predictions += 1
-            del st.session_state.predicted_label  # Réinitialiser la prédiction
+        validate_prediction(true_label)
 
-    # Affichage du tableau des prédictions
-    st.subheader('Tableau des prédictions')
-    st.write(f"Prédictions correctes: {st.session_state.correct_predictions}")
-    st.write(f"Prédictions incorrectes: {st.session_state.incorrect_predictions}")
+    display_prediction_table()
 
 elif menu == 'Jeux':
     st.header('Jeux')
-    st.write('Travail à réaliser')
+    st.subheader("Dessinez un chiffre:")
+    canvas_result = st_canvas(
+        fill_color="rgba(255, 165, 0, 0.3)",  # Couleur de remplissage
+        stroke_width=10,
+        stroke_color="#ffffff",
+        background_color="#000000",
+        width=280,
+        height=280,
+        drawing_mode="freedraw",
+        key="canvas_game"
+    )
+
+    if st.button('Soumettre le dessin'):
+        if canvas_result.image_data is not None:
+            img = canvas_result.image_data
+            img = Image.fromarray((img[:, :, 0]).astype('uint8'))
+            img = img.resize((28, 28), Image.ANTIALIAS)
+            img = np.array(img) / 255.0
+            img = img.reshape(1, 28, 28, 1)
+
+            predicted_label = predict_image(img)
+            st.write(f'Prédiction du chiffre dessiné : {predicted_label}')
+            st.session_state.predicted_label = predicted_label  # Stocker la prédiction dans la session
+
+            st.subheader("Activations des Couches")
+            plot_layer_activations(model, img)
+
+    if 'predicted_label' in st.session_state:
+        true_label = st.number_input('Entrez le vrai chiffre dessiné :', min_value=0, max_value=9, step=1)
+        validate_prediction(true_label)
+
+    display_prediction_table()
