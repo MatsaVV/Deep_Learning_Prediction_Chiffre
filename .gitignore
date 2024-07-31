@@ -1,8 +1,3 @@
-# Fichiers générés par Python
-__pycache__/
-*.py[cod]
-*$py.class
-
 # Environnements virtuels
 .env
 .venv
@@ -12,29 +7,18 @@ ENV/
 env.bak/
 venv.bak/
 
-# Fichiers de configuration de l'IDE
-.idea/
-.vscode/
-*.swp
-
-# Jupyter Notebook
-.ipynb_checkpoints
+# Fichiers de configuration sensibles
+.env
 
 # Logs
 *.log
 
-# Données sensibles et volumineuses
-data/dataset.csv
+# Données
+data/train.csv
+data/test.csv
 
-# Modèles sauvegardés
-models/model.h5
 
-# Fichiers temporaires
-*.tmp
-*.temp
-*.bak
-*.backup
-
-# Systèmes d'exploitation
-.DS_Store
-Thumbs.db
+# Autres fichiers à ignorer
+__pycache__/
+*.py[cod]
+*.so
