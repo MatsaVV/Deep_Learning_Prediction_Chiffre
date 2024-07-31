@@ -13,12 +13,24 @@ venv.bak/
 # Logs
 *.log
 
-# Données
-data/train.csv
-data/test.csv
 
+# Données
+data/*.npy
+
+# Modèles sauvegardés
+models/model.h5
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Systèmes d'exploitation
+.DS_Store
+Thumbs.db
 
 # Autres fichiers à ignorer
 __pycache__/
-*.py[cod]
+*.py
 *.so
