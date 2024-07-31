@@ -1,5 +1,7 @@
 ﻿streamlit
-streamlit-drawable-canvas
-tensorflow
 numpy
-Pillow
+tensorflow
+pillow
+pandas
+streamlit-drawable-canvas
+requests
