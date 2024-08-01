@@ -5,7 +5,6 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-# Chargement du modèle et des nouvelles données de test
 model = load_model('model/model.h5')
 X_test_new = np.load('data/X_test_new.npy')
 
@@ -59,16 +58,16 @@ def plot_layer_activations(model, img):
     activations = activation_model.predict(img)
 
     for layer_name, layer_activation in zip([layer.name for layer in model.layers if 'conv2d' in layer.name or 'max_pooling2d' in layer.name], activations):
-        n_features = layer_activation.shape[-1]  # nombre de caractéristiques dans l'activation
-        size = layer_activation.shape[1]  # taille de chaque caractéristique (supposons que c'est carré)
+        n_features = layer_activation.shape[-1]
+        size = layer_activation.shape[1]
 
-        n_cols = n_features // 16  # limites pour 16 caractéristiques par ligne
+        n_cols = n_features // 16
         display_grid = np.zeros((size * n_cols, size * 16))
 
         for col in range(n_cols):
             for row in range(16):
                 channel_image = layer_activation[0, :, :, col * 16 + row]
-                channel_image -= channel_image.mean()  # post-traitement pour une meilleure visualisation
+                channel_image -= channel_image.mean()
                 channel_image /= channel_image.std()
                 channel_image *= 64
                 channel_image += 128
@@ -101,7 +100,7 @@ if menu == 'Image aléatoire':
         st.write(f'Prédiction précédente : {st.session_state.predicted_label}')
 
     if 'predicted_label' in st.session_state:
-        validate_prediction(true_label=None)  # true_label devrait être défini ici
+        validate_prediction(true_label=None)
 
     if st.button('Nouvelle image'):
         st.session_state.update_image = True
@@ -113,7 +112,7 @@ elif menu == 'Dessin':
     st.header('Dessinez un chiffre')
     st.subheader("Dessinez un chiffre:")
     canvas_result = st_canvas(
-        fill_color="rgba(255, 165, 0, 0.3)",  # Couleur de remplissage
+        fill_color="rgba(255, 165, 0, 0.3)",
         stroke_width=10,
         stroke_color="#ffffff",
         background_color="#000000",
@@ -126,10 +125,10 @@ elif menu == 'Dessin':
     if st.button('Prédire le chiffre dessiné'):
         if canvas_result.image_data is not None:
             img = canvas_result.image_data
-            img = Image.fromarray((img[:, :, 0]).astype('uint8'))  # Convertir en image PIL, utiliser un seul canal
-            img = img.resize((28, 28), Image.ANTIALIAS)  # Redimensionner l'image comme les données d'entraînement
-            img = np.array(img) / 255.0  # Normalisation
-            img = img.reshape(1, 28, 28, 1)  # Reshape pour le modèle
+            img = Image.fromarray((img[:, :, 0]).astype('uint8'))
+            img = img.resize((28, 28), Image.ANTIALIAS)
+            img = np.array(img) / 255.0
+            img = img.reshape(1, 28, 28, 1)
             predicted_label = predict_image(img)
             st.write(f'Prédiction du chiffre dessiné : {predicted_label}')
 
@@ -143,7 +142,7 @@ elif menu == 'Jeux':
     st.header('Jeux')
     st.subheader("Dessinez un chiffre:")
     canvas_result = st_canvas(
-        fill_color="rgba(255, 165, 0, 0.3)",  # Couleur de remplissage
+        fill_color="rgba(255, 165, 0, 0.3)",
         stroke_width=10,
         stroke_color="#ffffff",
         background_color="#000000",
@@ -163,7 +162,7 @@ elif menu == 'Jeux':
 
             predicted_label = predict_image(img)
             st.write(f'Prédiction du chiffre dessiné : {predicted_label}')
-            st.session_state.predicted_label = predicted_label  # Stocker la prédiction dans la session
+            st.session_state.predicted_label = predicted_label
 
             st.subheader("Activations des Couches")
             plot_layer_activations(model, img)
