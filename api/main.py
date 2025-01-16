@@ -1,22 +1,22 @@
 from fastapi import FastAPI, UploadFile, File
 from tensorflow.keras.models import load_model
 import numpy as np
-import cv2
 from PIL import Image
 import io
+import os
 
 # Initialiser l'API FastAPI
 app = FastAPI()
 
-# Charger le modèle CNN
-model = load_model("model/model.h5")
+# Charger le modèle CNN avec un chemin absolu
+model_path = os.path.join(os.path.dirname(__file__), "model", "model.h5")
+model = load_model(model_path)
 
 # Fonction de prétraitement des images
 def preprocess_image(image: Image.Image):
     image = image.convert("L")  # Convertir en niveaux de gris
-    image = image.resize((28, 28))  # Redimensionner à 28x28 (comme MNIST)
-    image = np.array(image)
-    image = image / 255.0  # Normalisation
+    image = image.resize((28, 28))  # Redimensionner à 28x28
+    image = np.array(image) / 255.0  # Normalisation
     image = image.reshape(1, 28, 28, 1)  # Format pour le modèle
     return image
 
@@ -29,15 +29,16 @@ def health_check():
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
-        # Lire l'image
+        # Lire et prétraiter l'image
         image = Image.open(io.BytesIO(await file.read()))
         image = preprocess_image(image)
 
         # Prédiction avec le modèle CNN
         prediction = model.predict(image)
-        predicted_label = np.argmax(prediction)
+        predicted_label = int(np.argmax(prediction))
+        confidence = float(np.max(prediction))
 
-        return {"prediction": int(predicted_label), "confidence": float(np.max(prediction))}
+        return {"prediction": predicted_label, "confidence": confidence}
     except Exception as e:
         return {"error": str(e)}
 
