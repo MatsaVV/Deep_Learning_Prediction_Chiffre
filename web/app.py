@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit_drawable_canvas import st_canvas
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
+import io
 import requests
 
 # Définir l’URL de l’API REST
@@ -10,16 +10,21 @@ API_URL = "http://localhost:8000/predict"
 
 # Fonction pour envoyer une image à l’API REST et recevoir une prédiction
 def predict_image(image):
-    image = image.reshape(28, 28)  # Assurer la bonne dimension
-    image = (image * 255).astype('uint8')  # Convertir en uint8 pour l’API
-    files = {"file": ("image.png", image.tobytes(), "image/png")}
+    # Convertir l'image en niveaux de gris et en format PNG
+    image = Image.fromarray((image * 255).astype('uint8'))  # Convertir en image PIL
+    img_bytes = io.BytesIO()
+    image.save(img_bytes, format="PNG")
+    img_bytes.seek(0)
+
+    files = {"file": ("image.png", img_bytes, "image/png")}
 
     try:
         response = requests.post(API_URL, files=files)
+        print("Réponse de l'API :", response.json())  # Debug
         if response.status_code == 200:
-            return response.json()["prediction"]
+            return response.json().get("prediction", "Erreur: clé 'prediction' absente")
         else:
-            return "Erreur"
+            return f"Erreur: {response.status_code} - {response.text}"
     except requests.exceptions.RequestException as e:
         return f"Erreur de connexion à l’API : {e}"
 
@@ -76,11 +81,6 @@ if menu == 'Image aléatoire':
         st.session_state.predicted = True
         predicted_label = predict_image(image)
         st.write(f'Prédiction : {predicted_label}')
-    elif 'predicted' in st.session_state and st.session_state.predicted:
-        st.write(f'Prédiction précédente : {st.session_state.predicted_label}')
-
-    if 'predicted_label' in st.session_state:
-        validate_prediction(true_label=None)
 
     if st.button('Nouvelle image'):
         st.session_state.update_image = True
@@ -90,7 +90,6 @@ if menu == 'Image aléatoire':
 
 elif menu == 'Dessin':
     st.header('Dessinez un chiffre')
-    st.subheader("Dessinez un chiffre:")
     canvas_result = st_canvas(
         fill_color="rgba(255, 165, 0, 0.3)",
         stroke_width=10,
@@ -104,48 +103,11 @@ elif menu == 'Dessin':
 
     if st.button('Prédire le chiffre dessiné'):
         if canvas_result.image_data is not None:
-            img = canvas_result.image_data
-            img = Image.fromarray((img[:, :, 0]).astype('uint8'))
-            img = img.resize((28, 28), Image.ANTIALIAS)
+            img = canvas_result.image_data[:, :, 0]  # Prendre un seul canal
+            img = Image.fromarray(img.astype('uint8')).convert("L")
+            img = img.resize((28, 28))
             img = np.array(img) / 255.0
-            img = img.reshape(1, 28, 28, 1)
             predicted_label = predict_image(img)
             st.write(f'Prédiction du chiffre dessiné : {predicted_label}')
-
-    if 'predicted_label' in st.session_state:
-        true_label = st.number_input('Entrez le vrai chiffre dessiné :', min_value=0, max_value=9, step=1)
-        validate_prediction(true_label)
-
-    display_prediction_table()
-
-elif menu == 'Jeux':
-    st.header('Jeux')
-    st.subheader("Dessinez un chiffre:")
-    canvas_result = st_canvas(
-        fill_color="rgba(255, 165, 0, 0.3)",
-        stroke_width=10,
-        stroke_color="#ffffff",
-        background_color="#000000",
-        width=280,
-        height=280,
-        drawing_mode="freedraw",
-        key="canvas_game"
-    )
-
-    if st.button('Soumettre le dessin'):
-        if canvas_result.image_data is not None:
-            img = canvas_result.image_data
-            img = Image.fromarray((img[:, :, 0]).astype('uint8'))
-            img = img.resize((28, 28), Image.ANTIALIAS)
-            img = np.array(img) / 255.0
-            img = img.reshape(1, 28, 28, 1)
-
-            predicted_label = predict_image(img)
-            st.write(f'Prédiction du chiffre dessiné : {predicted_label}')
-            st.session_state.predicted_label = predicted_label
-
-    if 'predicted_label' in st.session_state:
-        true_label = st.number_input('Entrez le vrai chiffre dessiné :', min_value=0, max_value=9, step=1)
-        validate_prediction(true_label)
 
     display_prediction_table()
