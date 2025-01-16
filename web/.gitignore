@@ -13,6 +13,7 @@ venv.bak/
 # Logs
 *.log
 
+__pycache__/
 
 # Données
 
