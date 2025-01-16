@@ -1,0 +1,8 @@
+﻿fastapi
+uvicorn
+tensorflow==2.10.0
+numpy
+pillow
+opencv-python
+pytest
+python-multipart
