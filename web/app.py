@@ -6,7 +6,7 @@ import io
 import requests
 
 # Définir l’URL de l’API REST
-API_URL = "http://localhost:8000/predict"
+API_URL = "http://api:8000/predict"
 
 # Fonction pour envoyer une image à l’API REST et recevoir une prédiction
 def predict_image(image):
@@ -29,7 +29,7 @@ def predict_image(image):
         return f"Erreur de connexion à l’API : {e}"
 
 # Charger les données de test
-X_test_new = np.load('data/X_test_new.npy')
+X_test_new = np.load('api/data/X_test_new.npy')
 
 # Initialisation de l'état de l'application
 if 'attempts' not in st.session_state:

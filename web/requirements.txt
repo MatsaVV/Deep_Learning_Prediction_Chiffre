@@ -1,8 +1,8 @@
-streamlit
+streamlit==1.11.1
 tensorflow==2.10.0
-numpy
-pillow
-matplotlib
-requests
-streamlit-drawable-canvas
-pytest
+numpy==1.23.5
+pillow==9.1.1
+matplotlib==3.9.0
+requests==2.32.3
+streamlit-drawable-canvas==0.9.3
+pytest==8.3.3
