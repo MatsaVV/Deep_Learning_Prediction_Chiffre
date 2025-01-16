@@ -1,0 +1,22 @@
+# Ignorer les fichiers Python compilés
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorer les environnements virtuels locaux
+venv/
+.env
+
+# Ignorer les fichiers de logs et temporaires
+*.log
+*.tmp
+*.swp
+
+# Ignorer Git et Docker
+.git
+.dockerignore
+
+# Ignorer les fichiers de modèle et datasets volumineux
+data/
+model/*.h5

@@ -6,15 +6,14 @@ WORKDIR /app
 
 # Copier les fichiers nécessaires
 COPY requirements.txt .
-COPY main.py .
-COPY model/ model/
-COPY data/ /app/data/
+COPY app.py .
+COPY data/ data/
 
 # Installer les dépendances
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Exposer le port de l'API
-EXPOSE 8000
+# Exposer le port de Streamlit
+EXPOSE 8501
 
-# Lancer l'API avec Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Lancer l'application Streamlit
+CMD ["streamlit", "run", "app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
